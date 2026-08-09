@@ -501,27 +501,42 @@ function StorytellingSection() {
         </Reveal>
 
         <Reveal delay={0.08}>
-          <div className="mt-8 space-y-4" style={{ fontSize: 15, lineHeight: 1.8, color: C.text }}>
-            <p>지난주 동창 모임에서도 똑같은 얘기가 나왔어요.</p>
-            <p style={{ fontWeight: 700 }}>"야, 걔 진짜 성실하고 다정한데 왜 아직도 혼자냐?"</p>
-            <p>다들 고개를 끄덕였어요. 근데 딱 거기까지였죠.</p>
+          <div className="mt-8 text-center space-y-4" style={{ fontSize: 15, lineHeight: 1.85, color: C.text }}>
+            <p>지난주 동창 모임,<br />또 그 얘기가 나왔어요.</p>
+            <p style={{ fontWeight: 700 }}>
+              "야, 걔 진짜 성실하고 다정한데
+              <br />
+              왜 아직도 혼자냐?"
+            </p>
+            <p>다들 고개를 끄덕였죠.<br />근데 딱 거기까지.</p>
             <p style={{ color: C.sub }}>
-              번호를 물어봐도 되는 건지, 괜히 나섰다가 서로 어색해지는 건 아닌지 — 마음은 있어도
-              누구도 선뜻 다음 말을 잇지 못했어요.
+              번호를 물어봐도 되는 건지,
+              <br />
+              괜히 나섰다가 어색해지는 건 아닌지 —
+              <br />
+              마음은 있어도 아무도 다음 말을 잇지 못했어요.
             </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.14}>
-          <div className="mt-7 space-y-4" style={{ fontSize: 15, lineHeight: 1.8, color: C.text }}>
-            <p>이런 말도 어디선가 들어보셨을 거예요.</p>
-            <p style={{ fontWeight: 700 }}>"아니 잘생기고 예쁜데 왜 여친 남친이 없지? 너 왜 안 사귀냐?"</p>
-            <p style={{ color: C.sub }}>못 사귀는 거야, 안 사귀는 거야? 내가 볼 땐 그냥 안 사귀는 거 같은데.</p>
+        <Reveal delay={0.16}>
+          <div className="mt-8 text-center space-y-3" style={{ fontSize: 15, lineHeight: 1.85, color: C.text }}>
+            <p style={{ color: C.sub }}>이런 말도 어디선가 들어보셨을 거예요.</p>
+            <p style={{ fontWeight: 700 }}>
+              "아니 잘생기고 예쁜데
+              <br />
+              왜 여친 남친이 없지? 너 왜 안 사귀냐?"
+            </p>
+            <p style={{ color: C.sub }}>
+              못 사귀는 거야, 안 사귀는 거야?
+              <br />
+              내가 볼 땐 그냥, 안 사귀는 거 같은데.
+            </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.2}>
-          <div className="mt-8">
+        <Reveal delay={0.24}>
+          <div className="mt-8 flex justify-center">
             <FriendNote
               quote="아 진짜 소개해주고 싶은 사람 있는데, 어떻게 말을 꺼내야 하지..."
               author="우리 모두의 마음속에 있던 그 문장"
@@ -530,16 +545,86 @@ function StorytellingSection() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.26}>
-          <p className="mt-8 text-center" style={{ fontSize: 15, color: C.sub }}>
-            내 주변엔 나보다 훨씬 멀끔한 친구들이 수두룩합니다.
+        <Reveal delay={0.32}>
+          <p className="mt-9 text-center" style={{ fontSize: 15, color: C.sub, lineHeight: 1.7 }}>
+            내 주변엔
+            <br />
+            나보다 훨씬 멀끔한 친구들이
+            <br />
+            수두룩합니다.
           </p>
-          <p className="mt-3 text-center font-bold" style={{ fontSize: 17, color: C.text, lineHeight: 1.6 }}>
+          <p className="mt-5 text-center font-bold" style={{ fontSize: 18, color: C.primary, lineHeight: 1.6 }}>
             내친소는 그 다음 말을 대신해드려요.
             <br />
-            친구 번호 하나만 입력하면, 나머지는 저희가 이어드릴게요.
+            <span style={{ color: C.text }}>친구 번호 하나만 입력하면, 나머지는 저희가 이어드릴게요.</span>
           </p>
         </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function StepsTimeline() {
+  return (
+    <section className="py-16 sm:py-24" style={{ background: C.surface }}>
+      <div className="max-w-3xl mx-auto px-5 sm:px-8">
+        <Reveal>
+          <h2
+            className="text-center font-bold"
+            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}
+          >
+            신청하면 이렇게 진행돼요
+          </h2>
+        </Reveal>
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+          <Reveal delay={0.05}>
+            <div
+              className="h-full p-7 text-center"
+              style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22 }}
+            >
+              <div
+                className="mx-auto mb-4 flex items-center justify-center font-bold text-sm"
+                style={{ width: 40, height: 40, borderRadius: "50%", background: C.primary, color: "#fff" }}
+              >
+                1
+              </div>
+              <h3 className="font-bold" style={{ color: C.text, fontSize: 17 }}>
+                신청서 작성
+              </h3>
+              <p className="mt-1.5 text-sm" style={{ color: C.sub }}>
+                친구 정보와 소개하는 한마디를 적어서 신청해요.
+              </p>
+              <div className="mt-5 p-4 text-left" style={{ background: C.tint, border: "1px solid #FFD9DA", borderRadius: 14 }}>
+                <p className="text-xs font-bold mb-1.5" style={{ color: C.primary }}>
+                  ⚠️ 신청 전 꼭 확인해주세요
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: "#8a4b4d" }}>
+                  이름, 사진, 나이 같은 친구의 개인정보는 반드시 당사자 동의를 받은 후에만 입력할 수 있어요.
+                  동의 없이 제3자의 개인정보를 수집·제공하면 개인정보보호법 위반에 해당할 수 있어요.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <div
+              className="h-full p-7 text-center"
+              style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22 }}
+            >
+              <div
+                className="mx-auto mb-4 flex items-center justify-center font-bold text-sm"
+                style={{ width: 40, height: 40, borderRadius: "50%", background: C.primary, color: "#fff" }}
+              >
+                2
+              </div>
+              <h3 className="font-bold" style={{ color: C.text, fontSize: 17 }}>
+                접수 완료
+              </h3>
+              <p className="mt-1.5 text-sm" style={{ color: C.sub }}>
+                신청이 접수돼요. 정식 오픈하면 가장 먼저 연락드려요.
+              </p>
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );
