@@ -630,51 +630,6 @@ function StepsTimeline() {
   );
 }
 
-function StepsTimeline() {
-  const steps = [
-    { title: "신청서 작성", desc: "친구 정보와 소개하는 한마디를 적어서 신청해요." },
-    { title: "친구 인증", desc: "친구에게 인증 링크를 보내고, 친구가 확인하고 동의해요." },
-    { title: "접수 완료", desc: "신청이 접수돼요. 정식 오픈하면 가장 먼저 연락드려요." },
-  ];
-  return (
-    <section className="py-16 sm:py-24" style={{ background: C.surface }}>
-      <div className="max-w-2xl mx-auto px-5 sm:px-8">
-        <Reveal>
-          <h2
-            className="text-center font-bold"
-            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}
-          >
-            신청하면 이렇게 진행돼요
-          </h2>
-        </Reveal>
-        <div className="mt-12 relative">
-          <div className="absolute top-2 bottom-2 w-px" style={{ left: 19, background: C.border }} />
-          <div className="space-y-9">
-            {steps.map((s, i) => (
-              <Reveal key={s.title} delay={i * 0.06}>
-                <div className="relative pl-14">
-                  <div
-                    className="absolute top-0 left-0 flex items-center justify-center font-bold text-sm"
-                    style={{ width: 40, height: 40, borderRadius: "50%", background: C.primary, color: "#fff" }}
-                  >
-                    {i + 1}
-                  </div>
-                  <h3 className="font-bold" style={{ color: C.text, fontSize: 16 }}>
-                    {s.title}
-                  </h3>
-                  <p className="mt-1 text-sm" style={{ color: C.sub }}>
-                    {s.desc}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ---------------------------------------------------------
    신청 섹션 (구글 폼 임베드 + 친구 인증 팝업)
 --------------------------------------------------------- */
