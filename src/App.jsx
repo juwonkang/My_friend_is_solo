@@ -958,7 +958,14 @@ function ApplySection({ onBack }) {
         )}
       </div>
 
-      {done && <DoneModal onClose={() => setDone(false)} />}
+      {done && (
+        <DoneModal
+          onClose={() => {
+            setDone(false);
+            onBack(); // 확인을 누르면 메인 페이지로 이동
+          }}
+        />
+      )}
     </section>
   );
 }
