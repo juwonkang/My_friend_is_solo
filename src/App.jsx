@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Heart, Check, X, ShieldCheck, Quote } from "lucide-react";
+import { Heart, Check, X, ShieldCheck, Quote, Camera } from "lucide-react";
 
 /* ---------------------------------------------------------
    디자인 토큰
@@ -31,7 +31,7 @@ const inputStyle = {
 // "액세스 권한이 있는 사용자"가 "Anyone with Google Account"로 되어 있을 가능성이 높아요.
 // 반드시 "Anyone"(전체, 로그인 불필요)으로 바꿔서 재배포한 뒤 이 URL이 맞는지 다시 확인해주세요.
 const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzwDefhFOHdhvaTU94C_GCvcnfoC42zaopK5DTBD4yjwRkELiXmlOyZ1Sj9qevaV79A-A/exec";
+  "https://script.google.com/macros/s/AKfycbyu_JNiY5Jb6Uuy2Di_x1aR_71QbEpkRau7IhcfLMIwHSIPUhnK5LH9eVPbwRJI6EvG/exec";
 
 const GLOBAL_CSS = `
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
@@ -51,6 +51,40 @@ button { font-family: inherit; }
   to { opacity: 1; transform: translateY(0); }
 }
 `;
+
+/* ---------------------------------------------------------
+   사진 압축 유틸
+   - Apps Script POST 용량/속도를 위해 업로드 전 브라우저에서
+     가로/세로 최대 800px, JPEG 품질 0.75로 리사이즈해요.
+--------------------------------------------------------- */
+function compressImage(file, maxSize = 800, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height >= width && height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("image load failed"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("file read failed"));
+    reader.readAsDataURL(file);
+  });
+}
 
 /* ---------------------------------------------------------
    작은 컴포넌트들
@@ -596,7 +630,7 @@ function StepsTimeline() {
 }
 
 /* ---------------------------------------------------------
-   신청 섹션 (커스텀 폼 + Apps Script → 구글시트)
+   신청 섹션 (커스텀 폼 + Apps Script → 구글시트 + 드라이브)
 --------------------------------------------------------- */
 function ApplySection({ onBack }) {
   const [form, setForm] = useState({
@@ -612,6 +646,15 @@ function ApplySection({ onBack }) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
+  // 사진 업로드 관련 상태
+  const [photoPreview, setPhotoPreview] = useState(null); // data URL (미리보기 + 전송용)
+  const [photoError, setPhotoError] = useState("");
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // 같은 요청이 진행 중일 때 재클릭으로 중복 전송되는 걸 막는 락
+  const submitLockRef = useRef(false);
+
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const validate = () => {
@@ -625,28 +668,68 @@ function ApplySection({ onBack }) {
     return Object.keys(e).length === 0;
   };
 
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일을 다시 골라도 onChange가 또 발생하도록 초기화
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("이미지 파일만 업로드할 수 있어요");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setPhotoError("15MB 이하의 사진만 업로드할 수 있어요");
+      return;
+    }
+
+    setPhotoLoading(true);
+    setPhotoError("");
+    try {
+      const dataUrl = await compressImage(file);
+      setPhotoPreview(dataUrl);
+    } catch {
+      setPhotoError("사진을 불러오지 못했어요. 다시 시도해주세요");
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
+  const removePhoto = () => setPhotoPreview(null);
+
   const handleFormSubmit = async (ev) => {
     ev.preventDefault();
+    if (submitLockRef.current) return; // 이미 처리 중이면 무시
     if (!validate()) return;
+
+    // 버튼을 다시 누를 수 없도록 폼을 즉시 숨기고(=버튼이 DOM에서 사라짐) 락을 건다.
+    submitLockRef.current = true;
+    setSubmitting(true);
+
+    const payload = { ...form, submittedAt: new Date().toISOString() };
+    if (photoPreview) {
+      const [, base64Data] = photoPreview.split(",");
+      payload.photoBase64 = base64Data;
+      payload.photoMimeType = "image/jpeg";
+    }
 
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ ...form, submittedAt: new Date().toISOString() }),
+        body: JSON.stringify(payload),
       });
     } catch (err) {
       // no-cors라 응답은 못 읽지만, 요청 자체는 시트로 정상 전달돼요
     }
-
-    setSubmitting(true);
   };
 
   const handleFinalize = () => {
     setSubmitting(false);
     setDone(true);
+    submitLockRef.current = false; // 다음 친구를 새로 신청할 수 있도록 락 해제
     setForm({ name: "", age: "", region: "", job: "", hobbies: "", quote: "", applicantPhone: "" });
+    setPhotoPreview(null);
   };
 
   return (
@@ -674,6 +757,66 @@ function ApplySection({ onBack }) {
         ) : (
           <Reveal delay={0.08}>
             <form onSubmit={handleFormSubmit} className="space-y-5">
+              <div className="flex flex-col items-center mb-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative flex items-center justify-center transition duration-200 hover:brightness-95"
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: "50%",
+                    background: photoPreview
+                      ? `url(${photoPreview}) center/cover no-repeat`
+                      : C.tint,
+                    border: `2px dashed ${photoPreview ? "transparent" : "#FFD9DA"}`,
+                  }}
+                >
+                  {!photoPreview && (
+                    <Camera size={22} style={{ color: photoLoading ? "#FFC7C9" : C.primary }} />
+                  )}
+                  <span
+                    className="absolute flex items-center justify-center"
+                    style={{
+                      bottom: -2,
+                      right: -2,
+                      width: 26,
+                      height: 26,
+                      borderRadius: "50%",
+                      background: C.primary,
+                      border: "2px solid #fff",
+                    }}
+                  >
+                    <Camera size={12} style={{ color: "#fff" }} />
+                  </span>
+                </button>
+                <p className="mt-2 text-xs" style={{ color: C.sub }}>
+                  {photoLoading ? "사진 처리 중..." : "친구 사진 (선택)"}
+                </p>
+                {photoPreview && !photoLoading && (
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="mt-1 text-xs font-medium"
+                    style={{ color: C.primary }}
+                  >
+                    사진 지우기
+                  </button>
+                )}
+                {photoError && (
+                  <p className="mt-1 text-xs" style={{ color: C.primary }}>
+                    {photoError}
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
                   친구 이름
@@ -799,8 +942,14 @@ function ApplySection({ onBack }) {
 
               <button
                 type="submit"
+                disabled={photoLoading}
                 className="w-full py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
-                style={{ background: C.primary, borderRadius: 999 }}
+                style={{
+                  background: C.primary,
+                  borderRadius: 999,
+                  opacity: photoLoading ? 0.6 : 1,
+                  cursor: photoLoading ? "not-allowed" : "pointer",
+                }}
               >
                 신청하기
               </button>
