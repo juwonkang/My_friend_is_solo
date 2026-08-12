@@ -632,15 +632,34 @@ function StepsTimeline() {
 /* ---------------------------------------------------------
    신청 섹션 (커스텀 폼 + Apps Script → 구글시트 + 드라이브)
 --------------------------------------------------------- */
+function SectionHeader({ title, subtitle }) {
+  return (
+    <div>
+      <p className="text-sm font-bold" style={{ color: C.text }}>
+        {title}
+      </p>
+      {subtitle && (
+        <p className="text-xs mt-0.5" style={{ color: C.sub }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ApplySection({ onBack }) {
   const [form, setForm] = useState({
-    name: "",
-    age: "",
-    region: "",
-    job: "",
-    hobbies: "",
-    quote: "",
-    applicantPhone: "",
+    myName: "",
+    myPhone: "",
+    friendName: "",
+    friendGender: "",
+    friendAge: "",
+    friendRegion: "",
+    friendJob: "",
+    friendHeight: "",
+    friendPhone: "",
+    friendQuote: "",
+    friendHobbies: "",
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -652,6 +671,10 @@ function ApplySection({ onBack }) {
   const [photoLoading, setPhotoLoading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // 필수 동의 체크
+  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [consentError, setConsentError] = useState("");
+
   // 같은 요청이 진행 중일 때 재클릭으로 중복 전송되는 걸 막는 락
   const submitLockRef = useRef(false);
 
@@ -659,13 +682,31 @@ function ApplySection({ onBack }) {
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "친구 이름을 입력해주세요";
-    if (!form.age) e.age = "나이를 입력해주세요";
-    if (!form.region.trim()) e.region = "지역을 입력해주세요";
-    if (!form.job.trim()) e.job = "직업을 입력해주세요";
-    if (!form.quote.trim()) e.quote = "친구를 소개하는 한마디를 남겨주세요";
+    if (!form.myName.trim()) e.myName = "이름을 입력해주세요";
+    if (!form.myPhone.trim()) e.myPhone = "연락처를 입력해주세요";
+    if (!form.friendName.trim()) e.friendName = "친구 이름을 입력해주세요";
+    if (!form.friendGender) e.friendGender = "친구 성별을 선택해주세요";
+    if (!form.friendRegion.trim()) e.friendRegion = "활동/거주지역을 입력해주세요";
+    if (!form.friendJob.trim()) e.friendJob = "직업을 입력해주세요";
+    if (!form.friendHeight.trim()) e.friendHeight = "키를 입력해주세요";
+    if (!form.friendPhone.trim()) e.friendPhone = "친구 연락처를 입력해주세요";
     setErrors(e);
-    return Object.keys(e).length === 0;
+
+    let photoOk = true;
+    if (!photoPreview) {
+      setPhotoError("친구 사진을 첨부해주세요");
+      photoOk = false;
+    }
+
+    let consentOk = true;
+    if (!consentAgreed) {
+      setConsentError("동의해야 신청이 가능해요");
+      consentOk = false;
+    } else {
+      setConsentError("");
+    }
+
+    return Object.keys(e).length === 0 && photoOk && consentOk;
   };
 
   const handlePhotoChange = async (e) => {
@@ -696,6 +737,14 @@ function ApplySection({ onBack }) {
 
   const removePhoto = () => setPhotoPreview(null);
 
+  const toggleConsent = () => {
+    setConsentAgreed((v) => {
+      const next = !v;
+      if (next) setConsentError("");
+      return next;
+    });
+  };
+
   const handleFormSubmit = async (ev) => {
     ev.preventDefault();
     if (submitLockRef.current) return; // 이미 처리 중이면 무시
@@ -705,7 +754,20 @@ function ApplySection({ onBack }) {
     submitLockRef.current = true;
     setSubmitting(true);
 
-    const payload = { ...form, submittedAt: new Date().toISOString() };
+    const payload = {
+      myName: form.myName,
+      myPhone: form.myPhone,
+      friendName: form.friendName,
+      friendGender: form.friendGender,
+      friendAge: form.friendAge,
+      friendRegion: form.friendRegion,
+      friendJob: form.friendJob,
+      friendHeight: form.friendHeight,
+      friendPhone: form.friendPhone,
+      friendQuote: form.friendQuote,
+      friendHobbies: form.friendHobbies,
+      submittedAt: new Date().toISOString(),
+    };
     if (photoPreview) {
       const [, base64Data] = photoPreview.split(",");
       payload.photoBase64 = base64Data;
@@ -728,8 +790,21 @@ function ApplySection({ onBack }) {
     setSubmitting(false);
     setDone(true);
     submitLockRef.current = false; // 다음 친구를 새로 신청할 수 있도록 락 해제
-    setForm({ name: "", age: "", region: "", job: "", hobbies: "", quote: "", applicantPhone: "" });
+    setForm({
+      myName: "",
+      myPhone: "",
+      friendName: "",
+      friendGender: "",
+      friendAge: "",
+      friendRegion: "",
+      friendJob: "",
+      friendHeight: "",
+      friendPhone: "",
+      friendQuote: "",
+      friendHobbies: "",
+    });
     setPhotoPreview(null);
+    setConsentAgreed(false);
   };
 
   return (
@@ -745,7 +820,7 @@ function ApplySection({ onBack }) {
 
         <div className="text-center mb-8">
           <h2 className="font-bold" style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}>
-            지금 신청해보세요
+            내 친구를 소개합니다
           </h2>
           <p className="mt-2 text-sm" style={{ color: C.sub }}>
             친구 정보를 적어주시면, 인증을 거쳐 신청이 접수돼요.
@@ -756,188 +831,324 @@ function ApplySection({ onBack }) {
           <SubmittingLoader onDone={handleFinalize} />
         ) : (
           <Reveal delay={0.08}>
-            <form onSubmit={handleFormSubmit} className="space-y-5">
-              <div className="flex flex-col items-center mb-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  style={{ display: "none" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative flex items-center justify-center transition duration-200 hover:brightness-95"
-                  style={{
-                    width: 84,
-                    height: 84,
-                    borderRadius: "50%",
-                    background: photoPreview
-                      ? `url(${photoPreview}) center/cover no-repeat`
-                      : C.tint,
-                    border: `2px dashed ${photoPreview ? "transparent" : "#FFD9DA"}`,
-                  }}
-                >
-                  {!photoPreview && (
-                    <Camera size={22} style={{ color: photoLoading ? "#FFC7C9" : C.primary }} />
+            <form onSubmit={handleFormSubmit} className="space-y-7">
+              {/* 작성자(나) 정보 */}
+              <div className="space-y-4">
+                <SectionHeader title="작성자(나) 정보" subtitle="신청해주시는 본인 정보를 입력해주세요." />
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    이름
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.myName}
+                    onChange={update("myName")}
+                    placeholder="예: 이서연"
+                    style={inputStyle}
+                  />
+                  {errors.myName && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.myName}
+                    </p>
                   )}
-                  <span
-                    className="absolute flex items-center justify-center"
-                    style={{
-                      bottom: -2,
-                      right: -2,
-                      width: 26,
-                      height: 26,
-                      borderRadius: "50%",
-                      background: C.primary,
-                      border: "2px solid #fff",
-                    }}
-                  >
-                    <Camera size={12} style={{ color: "#fff" }} />
-                  </span>
-                </button>
-                <p className="mt-2 text-xs" style={{ color: C.sub }}>
-                  {photoLoading ? "사진 처리 중..." : "친구 사진 (선택)"}
-                </p>
-                {photoPreview && !photoLoading && (
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    연락처 (010-0000-0000 형식)
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.myPhone}
+                    onChange={update("myPhone")}
+                    placeholder="010-0000-0000"
+                    style={inputStyle}
+                  />
+                  {errors.myPhone && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.myPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 소개해줄 친구 기본 정보 */}
+              <div className="space-y-4 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
+                <div className="pt-3">
+                  <SectionHeader title="소개해줄 친구 기본 정보" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    친구 이름
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.friendName}
+                    onChange={update("friendName")}
+                    placeholder="예: 김도윤"
+                    style={inputStyle}
+                  />
+                  {errors.friendName && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    친구 성별
+                  </label>
+                  <div className="flex gap-2">
+                    {["남", "여"].map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, friendGender: g }))}
+                        className="flex-1 py-2.5 text-sm font-semibold transition duration-200"
+                        style={{
+                          borderRadius: 999,
+                          border: `1.5px solid ${form.friendGender === g ? C.primary : C.border}`,
+                          background: form.friendGender === g ? C.tint : "#fff",
+                          color: form.friendGender === g ? C.primary : C.sub,
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.friendGender && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendGender}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                      나이 (선택)
+                    </label>
+                    <input
+                      className="ncs-input"
+                      type="number"
+                      value={form.friendAge}
+                      onChange={update("friendAge")}
+                      placeholder="29"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                      키
+                    </label>
+                    <input
+                      className="ncs-input"
+                      value={form.friendHeight}
+                      onChange={update("friendHeight")}
+                      placeholder="175"
+                      style={inputStyle}
+                    />
+                    {errors.friendHeight && (
+                      <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                        {errors.friendHeight}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    활동/거주지역
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.friendRegion}
+                    onChange={update("friendRegion")}
+                    placeholder="예: 수원시 영통구, 서울 강남구 등"
+                    style={inputStyle}
+                  />
+                  {errors.friendRegion && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendRegion}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    직업
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.friendJob}
+                    onChange={update("friendJob")}
+                    placeholder="예: 백엔드 개발자, 초등학교 교사, 마케터"
+                    style={inputStyle}
+                  />
+                  {errors.friendJob && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendJob}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    친구 연락처 (010-0000-0000 형식)
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.friendPhone}
+                    onChange={update("friendPhone")}
+                    placeholder="010-0000-0000"
+                    style={inputStyle}
+                  />
+                  {errors.friendPhone && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 친구 추천사 & 매력 */}
+              <div className="space-y-4 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
+                <div className="pt-3">
+                  <SectionHeader title="친구 추천사 & 매력" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    친구가 보증하는 한 줄 소개 (선택)
+                  </label>
+                  <textarea
+                    className="ncs-input"
+                    value={form.friendQuote}
+                    onChange={update("friendQuote")}
+                    rows={3}
+                    maxLength={40}
+                    placeholder="예: 주말엔 배드민턴 치고 평일엔 코드랑 씨름하는 개발자예요"
+                    style={{ ...inputStyle, resize: "none" }}
+                  />
+                  <p className="text-xs mt-1 text-right" style={{ color: C.sub }}>
+                    {form.friendQuote.length}/40
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    주요 취미/관심사 (선택)
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.friendHobbies}
+                    onChange={update("friendHobbies")}
+                    placeholder="예: 배드민턴, 카페 탐방, 드라이브"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div className="flex flex-col items-center pt-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ display: "none" }}
+                  />
                   <button
                     type="button"
-                    onClick={removePhoto}
-                    className="mt-1 text-xs font-medium"
-                    style={{ color: C.primary }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative flex items-center justify-center transition duration-200 hover:brightness-95"
+                    style={{
+                      width: 84,
+                      height: 84,
+                      borderRadius: "50%",
+                      background: photoPreview
+                        ? `url(${photoPreview}) center/cover no-repeat`
+                        : C.tint,
+                      border: `2px dashed ${photoPreview ? "transparent" : "#FFD9DA"}`,
+                    }}
                   >
-                    사진 지우기
+                    {!photoPreview && (
+                      <Camera size={22} style={{ color: photoLoading ? "#FFC7C9" : C.primary }} />
+                    )}
+                    <span
+                      className="absolute flex items-center justify-center"
+                      style={{
+                        bottom: -2,
+                        right: -2,
+                        width: 26,
+                        height: 26,
+                        borderRadius: "50%",
+                        background: C.primary,
+                        border: "2px solid #fff",
+                      }}
+                    >
+                      <Camera size={12} style={{ color: "#fff" }} />
+                    </span>
                   </button>
-                )}
-                {photoError && (
-                  <p className="mt-1 text-xs" style={{ color: C.primary }}>
-                    {photoError}
+                  <p className="mt-2 text-sm font-semibold" style={{ color: C.text }}>
+                    친구 대표 사진
                   </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                  친구 이름
-                </label>
-                <input
-                  className="ncs-input"
-                  value={form.name}
-                  onChange={update("name")}
-                  placeholder="예: 김도윤"
-                  style={inputStyle}
-                />
-                {errors.name && (
-                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
-                    {errors.name}
+                  <p className="text-xs mt-0.5 text-center" style={{ color: C.sub }}>
+                    {photoLoading ? "사진 처리 중..." : "얼굴이 잘 나온 인스타 감성 사진으로 올려주세요"}
                   </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                    나이
-                  </label>
-                  <input
-                    className="ncs-input"
-                    type="number"
-                    value={form.age}
-                    onChange={update("age")}
-                    placeholder="29"
-                    style={inputStyle}
-                  />
-                  {errors.age && (
-                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
-                      {errors.age}
-                    </p>
+                  {photoPreview && !photoLoading && (
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      className="mt-1 text-xs font-medium"
+                      style={{ color: C.primary }}
+                    >
+                      사진 지우기
+                    </button>
                   )}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                    지역
-                  </label>
-                  <input
-                    className="ncs-input"
-                    value={form.region}
-                    onChange={update("region")}
-                    placeholder="예: 수원"
-                    style={inputStyle}
-                  />
-                  {errors.region && (
-                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
-                      {errors.region}
+                  {photoError && (
+                    <p className="mt-1 text-xs" style={{ color: C.primary }}>
+                      {photoError}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                  직업
+              {/* 개인정보 안내 + 필수 동의 */}
+              <div className="space-y-3 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
+                <div
+                  className="mt-3 p-4"
+                  style={{ background: C.tint, border: "1px solid #FFD9DA", borderRadius: 14 }}
+                >
+                  <p className="text-xs font-bold mb-1.5" style={{ color: C.primary }}>
+                    ⚠️ 친구 개인정보 관련 안내
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: "#8a4b4d" }}>
+                    이름, 사진, 나이, 연락처 같은 친구의 개인정보는 반드시 당사자 동의를 받은 후에만
+                    입력할 수 있어요. 동의 없이 제3자의 개인정보를 수집·제공하면 개인정보보호법 위반에
+                    해당할 수 있어요.
+                  </p>
+                </div>
+
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentAgreed}
+                    onChange={toggleConsent}
+                    style={{ marginTop: 3, width: 18, height: 18, accentColor: C.primary, flexShrink: 0 }}
+                  />
+                  <span className="text-sm leading-relaxed" style={{ color: C.text }}>
+                    소개해주는 친구에게 미리 '내친소' 등록 사실을 안내했고, 친구 동의를 받았음을
+                    확인합니다.{" "}
+                    <span style={{ color: C.primary, fontWeight: 700 }}>(필수)</span>
+                  </span>
                 </label>
-                <input
-                  className="ncs-input"
-                  value={form.job}
-                  onChange={update("job")}
-                  placeholder="예: 백엔드 개발자"
-                  style={inputStyle}
-                />
-                {errors.job && (
-                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
-                    {errors.job}
+                {consentError && (
+                  <p className="text-xs" style={{ color: C.primary }}>
+                    {consentError}
                   </p>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                  취미 (쉼표로 구분, 선택)
-                </label>
-                <input
-                  className="ncs-input"
-                  value={form.hobbies}
-                  onChange={update("hobbies")}
-                  placeholder="배드민턴, 카페, 드라이브"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                  친구를 소개하는 한마디
-                </label>
-                <textarea
-                  className="ncs-input"
-                  value={form.quote}
-                  onChange={update("quote")}
-                  rows={3}
-                  maxLength={30}
-                  placeholder="예: 착하고 다정한데 집순이라 사람을 잘 못 만나요"
-                  style={{ ...inputStyle, resize: "none" }}
-                />
-                <p className="text-xs mt-1 text-right" style={{ color: C.sub }}>
-                  {form.quote.length}/30
-                </p>
-                {errors.quote && (
-                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
-                    {errors.quote}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                  내 연락처 (선택 — 정식 오픈 소식 안내용)
-                </label>
-                <input
-                  className="ncs-input"
-                  value={form.applicantPhone}
-                  onChange={update("applicantPhone")}
-                  placeholder="010-0000-0000"
-                  style={inputStyle}
-                />
               </div>
 
               <button
