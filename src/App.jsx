@@ -707,10 +707,13 @@ function ApplySection({ onBack }) {
     if (!form.myPhone.trim()) e.myPhone = "연락처를 입력해주세요";
     if (!form.friendName.trim()) e.friendName = "친구 이름을 입력해주세요";
     if (!form.friendGender) e.friendGender = "친구 성별을 선택해주세요";
+    if (!form.friendAge.trim()) e.friendAge = "나이를 입력해주세요";
     if (!form.friendRegion.trim()) e.friendRegion = "활동/거주지역을 입력해주세요";
     if (!form.friendJob.trim()) e.friendJob = "직업을 입력해주세요";
     if (!form.friendHeight.trim()) e.friendHeight = "키를 입력해주세요";
     if (!form.friendPhone.trim()) e.friendPhone = "친구 연락처를 입력해주세요";
+    if (!form.friendQuote.trim()) e.friendQuote = "친구를 소개하는 한마디를 입력해주세요";
+    if (!form.friendHobbies.trim()) e.friendHobbies = "취미/관심사를 입력해주세요";
     setErrors(e);
 
     let photoOk = true;
@@ -952,7 +955,7 @@ function ApplySection({ onBack }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                      나이 (선택)
+                      나이
                     </label>
                     <input
                       className="ncs-input"
@@ -963,6 +966,11 @@ function ApplySection({ onBack }) {
                       maxLength={3}
                       style={inputStyle}
                     />
+                    {errors.friendAge && (
+                      <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                        {errors.friendAge}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
@@ -1050,7 +1058,7 @@ function ApplySection({ onBack }) {
 
                 <div>
                   <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                    친구가 보증하는 한 줄 소개 (선택)
+                    친구가 보증하는 한 줄 소개
                   </label>
                   <textarea
                     className="ncs-input"
@@ -1064,11 +1072,16 @@ function ApplySection({ onBack }) {
                   <p className="text-xs mt-1 text-right" style={{ color: C.sub }}>
                     {form.friendQuote.length}/40
                   </p>
+                  {errors.friendQuote && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendQuote}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
-                    주요 취미/관심사 (선택)
+                    주요 취미/관심사
                   </label>
                   <input
                     className="ncs-input"
@@ -1077,6 +1090,11 @@ function ApplySection({ onBack }) {
                     placeholder="예: 배드민턴, 카페 탐방, 드라이브"
                     style={inputStyle}
                   />
+                  {errors.friendHobbies && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.friendHobbies}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-center pt-2">
