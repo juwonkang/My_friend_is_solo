@@ -31,7 +31,7 @@ const inputStyle = {
 // "액세스 권한이 있는 사용자"가 "Anyone with Google Account"로 되어 있을 가능성이 높아요.
 // 반드시 "Anyone"(전체, 로그인 불필요)으로 바꿔서 재배포한 뒤 이 URL이 맞는지 다시 확인해주세요.
 const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyu_JNiY5Jb6Uuy2Di_x1aR_71QbEpkRau7IhcfLMIwHSIPUhnK5LH9eVPbwRJI6EvG/exec";
+  "https://script.google.com/macros/s/AKfycbw40yYXSbFGC06MfKuV-Vm6ezUQYL0njGLSRKGChw6abCdHtnp3HFBCEaZ-URI1zvrn/exec";
 
 const GLOBAL_CSS = `
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
