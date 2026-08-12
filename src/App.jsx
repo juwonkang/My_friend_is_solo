@@ -3,24 +3,29 @@ import { Heart, Check, X, ShieldCheck, Quote, Camera } from "lucide-react";
 
 /* ---------------------------------------------------------
    디자인 토큰
+   컨셉: "친구의 추천장" — 코르크보드에 핀으로 꽂은 종이 카드.
+   시스템 UI(버튼/입력창)는 부드러운 라운드, 종이/카드류는
+   살짝 각지고 회전된 형태로 구분해요.
 --------------------------------------------------------- */
 const C = {
-  primary: "#FF5A5F",
-  primaryDark: "#E14449",
-  tint: "#FFF4F4",
-  bg: "#FFFFFF",
-  surface: "#FAFAFA",
-  text: "#222222",
-  sub: "#666666",
-  border: "#ECECEC",
+  primary: "#E14C5F", // 체리·라즈베리 포인트
+  primaryDeep: "#B93A4C",
+  gold: "#E8A33D", // 스티키노트/핀 포인트
+  ink: "#241A1C", // 따뜻한 잉크블랙 (본문 텍스트)
+  sub: "#8A7A75", // 톤다운된 보조 텍스트
+  paper: "#FFFBF8", // 카드/기본 배경 (light)
+  paperAlt: "#FBF1E9", // 섹션 배경 (light, 약간 더 진한 톤)
+  board: "#2A1620", // 헤더·히어로·푸터 (dark, 코르크보드 느낌)
+  tint: "#FDEDEF", // 옅은 라즈베리 워시 (배지/경고박스)
+  border: "#F0E3DA", // 밝은 배경 위 헤어라인
 };
 
 const inputStyle = {
   width: "100%",
   padding: "12px 14px",
   fontSize: 15,
-  color: C.text,
-  background: "#fff",
+  color: C.ink,
+  background: "#FFFFFF",
   border: `1px solid ${C.border}`,
   borderRadius: 14,
   outline: "none",
@@ -40,8 +45,10 @@ const GLOBAL_CSS = `
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 .ncs-input:focus { border-color: ${C.primary} !important; box-shadow: 0 0 0 3px ${C.tint}; }
-button { font-family: inherit; }
-::selection { background: ${C.tint}; color: ${C.primaryDark}; }
+button { font-family: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid ${C.primary}; outline-offset: 2px; }
+::selection { background: ${C.tint}; color: ${C.primaryDeep}; }
+
 @keyframes toastPop {
   from { opacity: 0; transform: translate(-50%, 10px); }
   to { opacity: 1; transform: translate(-50%, 0); }
@@ -49,6 +56,20 @@ button { font-family: inherit; }
 @keyframes adFade {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes stampIn {
+  0% { opacity: 0; transform: scale(1.6) rotate(-14deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(-8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 `;
 
@@ -84,6 +105,46 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
     reader.onerror = () => reject(new Error("file read failed"));
     reader.readAsDataURL(file);
   });
+}
+
+/* ---------------------------------------------------------
+   작은 장식 컴포넌트 — "핀"과 "테이프"
+--------------------------------------------------------- */
+function PinDot({ color = C.gold }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        top: -7,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 13,
+        height: 13,
+        borderRadius: "50%",
+        background: `radial-gradient(circle at 35% 30%, #FFFFFFaa, ${color})`,
+        boxShadow: "0 2px 5px rgba(0,0,0,0.28)",
+      }}
+    />
+  );
+}
+
+function TapeStrip({ rotate = -6, left = 18, color = "rgba(232,163,61,0.55)" }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        top: -9,
+        left,
+        width: 44,
+        height: 16,
+        background: color,
+        transform: `rotate(${rotate}deg)`,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+      }}
+    />
+  );
 }
 
 /* ---------------------------------------------------------
@@ -128,27 +189,30 @@ function FriendNote({ quote, author, size = "md" }) {
   const big = size === "lg";
   return (
     <div
+      className="relative"
       style={{
-        background: C.tint,
-        border: "1px solid #FFE1E2",
-        borderRadius: 18,
-        padding: big ? "22px 24px" : "16px 18px",
-        transform: "rotate(-0.6deg)",
+        background: C.paper,
+        border: `1px solid ${C.border}`,
+        borderRadius: 5,
+        padding: big ? "26px 26px 22px" : "18px 18px 16px",
+        transform: `rotate(${big ? -1.4 : -1}deg)`,
+        boxShadow: "0 16px 34px -16px rgba(42,22,32,0.35)",
       }}
     >
-      <Quote size={big ? 20 : 16} style={{ color: "#FFB3B5", marginBottom: 6 }} />
+      <PinDot />
+      <Quote size={big ? 20 : 16} style={{ color: C.gold, marginBottom: 8 }} />
       <p
         style={{
           fontFamily: "'Gowun Batang', serif",
-          fontSize: big ? 17 : 14,
-          lineHeight: 1.7,
-          color: "#4A3435",
+          fontSize: big ? 18 : 15,
+          lineHeight: 1.75,
+          color: C.ink,
         }}
       >
         {quote}
       </p>
       {author && (
-        <p className="mt-2 text-xs font-medium" style={{ color: C.primary }}>
+        <p className="mt-3 text-xs font-semibold" style={{ color: C.primary }}>
           — {author}
         </p>
       )}
@@ -160,13 +224,14 @@ function Toast({ message }) {
   if (!message) return null;
   return (
     <div
-      className="fixed bottom-6 left-1/2 z-50 px-5 py-3 text-sm font-medium text-white"
+      className="fixed bottom-6 left-1/2 z-50 px-5 py-3 text-sm font-medium"
       style={{
-        background: C.text,
+        background: C.ink,
+        color: C.paper,
         borderRadius: 999,
         animation: "toastPop 0.25s ease",
         transform: "translateX(-50%)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
       }}
     >
       {message}
@@ -180,22 +245,19 @@ function AdSlot() {
       tag: "성형외과",
       title: "이번 봄, 자신감 리프팅",
       desc: "무료 상담 예약하고 가볍게 시작해보세요",
-      bg: "#FFE1EC",
-      accent: "#FF5A8A",
+      accent: C.primary,
     },
     {
       tag: "피부과",
       title: "칙칙한 피부, 톤업 케어",
       desc: "첫 방문 진단 상담 50% 할인",
-      bg: "#DCEEFF",
-      accent: "#3E8EF7",
+      accent: C.gold,
     },
     {
       tag: "헤어·뷰티",
       title: "소개팅 전, 헤어 스타일링",
       desc: "지금 예약하면 5분 무료 상담",
-      bg: "#EAE2FF",
-      accent: "#8B6CFF",
+      accent: C.primaryDeep,
     },
   ];
   const [i, setI] = useState(0);
@@ -211,32 +273,36 @@ function AdSlot() {
     <div
       style={{
         position: "relative",
-        background: ad.bg,
-        borderRadius: 20,
-        padding: "20px 20px 16px",
+        background: C.paperAlt,
+        border: `1px solid ${C.border}`,
+        borderRadius: 18,
+        padding: "18px 20px 16px",
         overflow: "hidden",
-        transition: "background 0.4s ease",
       }}
     >
       <div key={i} style={{ animation: "adFade 0.4s ease" }}>
-        <span
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 14,
-            fontSize: 10,
-            fontWeight: 700,
-            color: "rgba(0,0,0,0.4)",
-            background: "rgba(255,255,255,0.65)",
-            padding: "2px 8px",
-            borderRadius: 999,
-          }}
-        >
-          광고
-        </span>
-        <p style={{ fontSize: 11, fontWeight: 700, color: ad.accent, marginBottom: 6 }}>{ad.tag}</p>
-        <p style={{ fontSize: 15, fontWeight: 700, color: "#2B2B2B" }}>{ad.title}</p>
-        <p style={{ fontSize: 12, color: "#5b5b5b", marginTop: 4 }}>{ad.desc}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: ad.accent }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: ad.accent, letterSpacing: 0.3 }}>
+            {ad.tag}
+          </span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: 10,
+              fontWeight: 600,
+              color: C.sub,
+              background: "#fff",
+              padding: "2px 8px",
+              borderRadius: 999,
+              border: `1px solid ${C.border}`,
+            }}
+          >
+            광고
+          </span>
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>{ad.title}</p>
+        <p style={{ fontSize: 12, color: C.sub, marginTop: 3 }}>{ad.desc}</p>
       </div>
       <div className="mt-3.5 flex gap-1.5">
         {ads.map((_, idx) => (
@@ -246,7 +312,7 @@ function AdSlot() {
               width: idx === i ? 16 : 5,
               height: 5,
               borderRadius: 999,
-              background: idx === i ? ad.accent : "rgba(0,0,0,0.15)",
+              background: idx === i ? ad.accent : "rgba(36,26,28,0.14)",
               transition: "all 0.3s ease",
             }}
           />
@@ -282,7 +348,7 @@ function SubmittingLoader({ onDone }) {
             className="mx-auto mb-4 animate-spin"
             style={{ width: 34, height: 34, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.primary }}
           />
-          <h2 className="font-bold" style={{ fontSize: 18, color: C.text }}>
+          <h2 className="font-bold" style={{ fontSize: 18, color: C.ink }}>
             신청을 처리하고 있어요
           </h2>
         </div>
@@ -291,7 +357,7 @@ function SubmittingLoader({ onDone }) {
             <div
               key={s}
               className="flex items-center gap-2.5 text-sm transition duration-300"
-              style={{ opacity: i <= doneCount ? 1 : 0.35, color: i < doneCount ? C.text : C.sub }}
+              style={{ opacity: i <= doneCount ? 1 : 0.35, color: i < doneCount ? C.ink : C.sub }}
             >
               {i < doneCount ? (
                 <Check size={16} style={{ color: C.primary, flexShrink: 0 }} />
@@ -319,21 +385,29 @@ function DoneModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-5"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      style={{ background: "rgba(36,26,28,0.55)" }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm bg-white p-8 text-center"
-        style={{ borderRadius: 24 }}
+        className="w-full max-w-sm text-center"
+        style={{ background: C.paper, borderRadius: 20, padding: "36px 30px" }}
       >
         <div
           className="mx-auto mb-5 flex items-center justify-center"
-          style={{ width: 64, height: 64, borderRadius: "50%", background: C.tint }}
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            border: `3px solid ${C.primary}`,
+            color: C.primary,
+            transform: "rotate(-8deg)",
+            animation: "stampIn 0.5s ease",
+          }}
         >
-          <Check size={28} style={{ color: C.primary }} />
+          <Check size={30} />
         </div>
-        <h3 className="font-bold" style={{ fontSize: 20, color: C.text }}>
+        <h3 className="font-bold" style={{ fontSize: 20, color: C.ink }}>
           신청 완료!
         </h3>
         <p className="mt-3 text-sm leading-relaxed" style={{ color: C.sub }}>
@@ -362,12 +436,17 @@ function DoneModal({ onClose }) {
 function Header({ onApply, onLogoClick }) {
   return (
     <header
-      className="sticky top-0 z-40 bg-white border-b"
-      style={{ borderColor: C.border, boxShadow: "0 1px 0 rgba(0,0,0,0.02)" }}
+      className="sticky top-0 z-40"
+      style={{
+        background: "rgba(42,22,32,0.72)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+      }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-        <button onClick={onLogoClick} className="flex items-center gap-1.5 font-bold text-lg" style={{ color: C.text }}>
-          <Heart size={20} style={{ color: C.primary }} fill={C.primary} />
+        <button onClick={onLogoClick} className="flex items-center gap-1.5 font-bold text-lg" style={{ color: C.paper }}>
+          <Heart size={19} style={{ color: C.primary }} fill={C.primary} />
           내친소
         </button>
         <button
@@ -384,46 +463,100 @@ function Header({ onApply, onLogoClick }) {
 
 function Hero({ onApply }) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center relative">
-        <div
-          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 mb-6"
-          style={{ background: C.tint, color: C.primary, borderRadius: 999 }}
-        >
-          <ShieldCheck size={14} /> 친구가 보증하는 소개
-        </div>
-        <h1
-          className="font-bold leading-tight tracking-tight"
-          style={{ fontSize: "clamp(28px, 5vw, 48px)", color: C.text }}
-        >
-          괜찮은 친구를
-          <br className="sm:hidden" /> 대신 소개해주세요.
-        </h1>
-        <p className="mt-5 text-base sm:text-lg leading-relaxed" style={{ color: C.sub }}>
-          직접 나를 소개하는 건 어렵지만,
-          <br />
-          친구를 자랑하는 건 쉽습니다.
-        </p>
-        <div className="mt-9 flex items-center justify-center">
-          <button
-            onClick={onApply}
-            className="inline-block px-8 py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
-            style={{ background: C.primary, borderRadius: 999 }}
+    <section className="relative overflow-hidden" style={{ background: C.board }}>
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -right-20 w-96 h-96 rounded-full blur-3xl opacity-20"
+        style={{ background: C.primary }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-16 w-80 h-80 rounded-full blur-3xl opacity-10"
+        style={{ background: C.gold }}
+      />
+
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-16 pb-20 sm:pt-24 sm:pb-28 relative grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+        <div className="text-center lg:text-left">
+          <div
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 mb-6"
+            style={{
+              background: "rgba(232,163,61,0.16)",
+              color: C.gold,
+              borderRadius: 999,
+              border: "1px solid rgba(232,163,61,0.3)",
+            }}
           >
-            지금 신청하기
-          </button>
+            <ShieldCheck size={14} /> 친구가 보증하는 소개
+          </div>
+          <h1
+            className="font-bold leading-tight tracking-tight"
+            style={{ fontSize: "clamp(30px, 5vw, 52px)", color: C.paper }}
+          >
+            괜찮은 친구를
+            <br className="sm:hidden" /> 대신 소개해주세요.
+          </h1>
+          <p className="mt-5 text-base sm:text-lg leading-relaxed" style={{ color: "rgba(255,251,248,0.62)" }}>
+            직접 나를 소개하는 건 어렵지만,
+            <br />
+            친구를 자랑하는 건 쉽습니다.
+          </p>
+          <div className="mt-9 flex items-center justify-center lg:justify-start">
+            <button
+              onClick={onApply}
+              className="inline-block px-8 py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
+              style={{ background: C.primary, borderRadius: 999, boxShadow: "0 14px 26px -10px rgba(225,76,95,0.55)" }}
+            >
+              지금 신청하기
+            </button>
+          </div>
+        </div>
+
+        <div className="relative mx-auto lg:mx-0" style={{ maxWidth: 300 }}>
+          <div className="relative" style={{ transform: "rotate(-4deg)" }}>
+            <div
+              style={{
+                background: C.paper,
+                borderRadius: 6,
+                padding: "22px 22px 20px",
+                boxShadow: "0 30px 60px -20px rgba(0,0,0,0.5)",
+              }}
+            >
+              <PinDot color={C.primary} />
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="flex items-center justify-center font-bold"
+                  style={{ width: 40, height: 40, borderRadius: "50%", background: C.tint, color: C.primary }}
+                >
+                  도
+                </div>
+                <div>
+                  <p className="font-bold text-sm" style={{ color: C.ink }}>
+                    김도윤 · 29
+                  </p>
+                  <p className="text-xs" style={{ color: C.sub }}>
+                    수원시 영통구 · 백엔드 개발자
+                  </p>
+                </div>
+              </div>
+              <p style={{ fontFamily: "'Gowun Batang', serif", fontSize: 15, lineHeight: 1.7, color: C.ink }}>
+                "배드민턴 치면 세상 다정한 사람. 아직 솔로인 게 미스터리예요."
+              </p>
+              <p className="mt-2 text-xs font-semibold" style={{ color: C.primary }}>
+                — 친구 이서연
+              </p>
+            </div>
+            <TapeStrip rotate={8} left={-6} />
+          </div>
         </div>
       </div>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-20"
-        style={{ background: C.primary }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl opacity-10"
-        style={{ background: C.primary }}
-      />
     </section>
   );
 }
@@ -432,29 +565,33 @@ function WhyCompare() {
   const oldWay = ["내가 나를 소개해야 함", "부담스러움", "과장된 프로필"];
   const newWay = ["친구가 소개", "실제 성격 기반", "신뢰감"];
   return (
-    <section className="py-16 sm:py-24" style={{ background: C.surface }}>
+    <section className="py-16 sm:py-24" style={{ background: C.paper }}>
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <Reveal>
           <h2
             className="text-center font-bold"
-            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}
+            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.ink }}
           >
             왜 내친소인가?
           </h2>
         </Reveal>
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
           <Reveal delay={0.05}>
             <div
               className="h-full p-7"
-              style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22 }}
+              style={{ background: C.paperAlt, borderRadius: 5, transform: "rotate(-1.2deg)" }}
             >
               <p className="text-xs font-semibold mb-4" style={{ color: C.sub }}>
                 기존 소개팅
               </p>
               <ul className="space-y-3">
                 {oldWay.map((t) => (
-                  <li key={t} className="flex items-start gap-2 text-sm" style={{ color: C.sub }}>
-                    <X size={16} className="mt-0.5 shrink-0" style={{ color: "#C7C7C7" }} />
+                  <li
+                    key={t}
+                    className="flex items-start gap-2 text-sm"
+                    style={{ color: C.sub, textDecoration: "line-through", textDecorationColor: "rgba(138,122,117,0.45)" }}
+                  >
+                    <X size={16} className="mt-0.5 shrink-0" style={{ color: "#C7BAB4" }} />
                     {t}
                   </li>
                 ))}
@@ -463,9 +600,16 @@ function WhyCompare() {
           </Reveal>
           <Reveal delay={0.15}>
             <div
-              className="h-full p-7"
-              style={{ background: C.tint, border: "1px solid #FFD9DA", borderRadius: 22 }}
+              className="relative h-full p-7"
+              style={{
+                background: C.paper,
+                border: `1.5px solid ${C.primary}`,
+                borderRadius: 5,
+                transform: "rotate(1deg)",
+                boxShadow: "0 20px 40px -18px rgba(225,76,95,0.3)",
+              }}
             >
+              <PinDot />
               <p className="text-xs font-semibold mb-4" style={{ color: C.primary }}>
                 내친소
               </p>
@@ -474,7 +618,7 @@ function WhyCompare() {
                   <li
                     key={t}
                     className="flex items-start gap-2 text-sm font-medium"
-                    style={{ color: C.text }}
+                    style={{ color: C.ink }}
                   >
                     <Check size={16} className="mt-0.5 shrink-0" style={{ color: C.primary }} />
                     {t}
@@ -491,16 +635,16 @@ function WhyCompare() {
 
 function StorytellingSection() {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="py-16 sm:py-24" style={{ background: C.paperAlt }}>
       <div className="max-w-2xl mx-auto px-5 sm:px-8">
         <Reveal>
-          <h2 className="text-center font-bold" style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}>
+          <h2 className="text-center font-bold" style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.ink }}>
             다들 한 번쯤 해본 그 말
           </h2>
         </Reveal>
 
         <Reveal delay={0.08}>
-          <div className="mt-8 text-center space-y-4" style={{ fontSize: 15, lineHeight: 1.85, color: C.text }}>
+          <div className="mt-8 text-center space-y-4" style={{ fontSize: 15, lineHeight: 1.85, color: C.ink }}>
             <p>지난주 동창 모임,<br />또 그 얘기가 나왔어요.</p>
             <p style={{ fontWeight: 700 }}>
               "야, 걔 진짜 성실하고 다정한데
@@ -519,7 +663,7 @@ function StorytellingSection() {
         </Reveal>
 
         <Reveal delay={0.16}>
-          <div className="mt-8 text-center space-y-3" style={{ fontSize: 15, lineHeight: 1.85, color: C.text }}>
+          <div className="mt-8 text-center space-y-3" style={{ fontSize: 15, lineHeight: 1.85, color: C.ink }}>
             <p style={{ color: C.sub }}>이런 말도 어디선가 들어보셨을 거예요.</p>
             <p style={{ fontWeight: 700 }}>
               "아니 잘생기고 예쁜데
@@ -535,7 +679,7 @@ function StorytellingSection() {
         </Reveal>
 
         <Reveal delay={0.24}>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-10 flex justify-center">
             <FriendNote
               quote="아 진짜 소개해주고 싶은 사람 있는데, 어떻게 말을 꺼내야 하지..."
               author="우리 모두의 마음속에 있던 그 문장"
@@ -545,7 +689,7 @@ function StorytellingSection() {
         </Reveal>
 
         <Reveal delay={0.32}>
-          <p className="mt-9 text-center" style={{ fontSize: 15, color: C.sub, lineHeight: 1.7 }}>
+          <p className="mt-10 text-center" style={{ fontSize: 15, color: C.sub, lineHeight: 1.7 }}>
             내 주변엔
             <br />
             나보다 훨씬 멀끔한 친구들이
@@ -555,7 +699,7 @@ function StorytellingSection() {
           <p className="mt-5 text-center font-bold" style={{ fontSize: 18, color: C.primary, lineHeight: 1.6 }}>
             내친소는 그 다음 말을 대신해드려요.
             <br />
-            <span style={{ color: C.text }}>친구 번호 하나만 입력하면, 나머지는 저희가 이어드릴게요.</span>
+            <span style={{ color: C.ink }}>친구 번호 하나만 입력하면, 나머지는 저희가 이어드릴게요.</span>
           </p>
         </Reveal>
       </div>
@@ -565,12 +709,12 @@ function StorytellingSection() {
 
 function StepsTimeline() {
   return (
-    <section className="py-16 sm:py-24" style={{ background: C.surface }}>
+    <section className="py-16 sm:py-24" style={{ background: C.paper }}>
       <div className="max-w-3xl mx-auto px-5 sm:px-8">
         <Reveal>
           <h2
             className="text-center font-bold"
-            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}
+            style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.ink }}
           >
             신청하면 이렇게 진행돼요
           </h2>
@@ -579,7 +723,7 @@ function StepsTimeline() {
           <Reveal delay={0.05}>
             <div
               className="h-full p-7 text-center"
-              style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22 }}
+              style={{ background: C.paperAlt, border: `1px solid ${C.border}`, borderRadius: 22 }}
             >
               <div
                 className="mx-auto mb-4 flex items-center justify-center font-bold text-sm"
@@ -587,17 +731,17 @@ function StepsTimeline() {
               >
                 1
               </div>
-              <h3 className="font-bold" style={{ color: C.text, fontSize: 17 }}>
+              <h3 className="font-bold" style={{ color: C.ink, fontSize: 17 }}>
                 신청서 작성
               </h3>
               <p className="mt-1.5 text-sm" style={{ color: C.sub }}>
                 친구 정보와 소개하는 한마디를 적어서 신청해요.
               </p>
-              <div className="mt-5 p-4 text-left" style={{ background: C.tint, border: "1px solid #FFD9DA", borderRadius: 14 }}>
+              <div className="mt-5 p-4 text-left" style={{ background: C.tint, border: `1px solid ${C.border}`, borderRadius: 14 }}>
                 <p className="text-xs font-bold mb-1.5" style={{ color: C.primary }}>
                   ⚠️ 신청 전 꼭 확인해주세요
                 </p>
-                <p className="text-xs leading-relaxed" style={{ color: "#8a4b4d" }}>
+                <p className="text-xs leading-relaxed" style={{ color: C.primaryDeep }}>
                   이름, 사진, 나이 같은 친구의 개인정보는 반드시 당사자 동의를 받은 후에만 입력할 수 있어요.
                   동의 없이 제3자의 개인정보를 수집·제공하면 개인정보보호법 위반에 해당할 수 있어요.
                 </p>
@@ -607,7 +751,7 @@ function StepsTimeline() {
           <Reveal delay={0.12}>
             <div
               className="h-full p-7 text-center"
-              style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22 }}
+              style={{ background: C.paperAlt, border: `1px solid ${C.border}`, borderRadius: 22 }}
             >
               <div
                 className="mx-auto mb-4 flex items-center justify-center font-bold text-sm"
@@ -615,7 +759,7 @@ function StepsTimeline() {
               >
                 2
               </div>
-              <h3 className="font-bold" style={{ color: C.text, fontSize: 17 }}>
+              <h3 className="font-bold" style={{ color: C.ink, fontSize: 17 }}>
                 접수 완료
               </h3>
               <p className="mt-1.5 text-sm" style={{ color: C.sub }}>
@@ -635,7 +779,7 @@ function StepsTimeline() {
 function SectionHeader({ title, subtitle }) {
   return (
     <div>
-      <p className="text-sm font-bold" style={{ color: C.text }}>
+      <p className="text-sm font-bold" style={{ color: C.ink }}>
         {title}
       </p>
       {subtitle && (
@@ -643,6 +787,17 @@ function SectionHeader({ title, subtitle }) {
           {subtitle}
         </p>
       )}
+    </div>
+  );
+}
+
+function SectionCard({ children }) {
+  return (
+    <div
+      className="space-y-4 p-6 sm:p-7"
+      style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: 22 }}
+    >
+      {children}
     </div>
   );
 }
@@ -832,7 +987,7 @@ function ApplySection({ onBack }) {
   };
 
   return (
-    <section className="py-10 sm:py-16" style={{ background: C.bg, minHeight: "100vh" }}>
+    <section className="py-10 sm:py-16" style={{ background: C.paperAlt, minHeight: "100vh" }}>
       <div className="max-w-xl mx-auto px-5 sm:px-8">
         <button
           onClick={onBack}
@@ -843,7 +998,7 @@ function ApplySection({ onBack }) {
         </button>
 
         <div className="text-center mb-8">
-          <h2 className="font-bold" style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.text }}>
+          <h2 className="font-bold" style={{ fontSize: "clamp(22px,3.4vw,32px)", color: C.ink }}>
             내 친구를 소개합니다
           </h2>
           <p className="mt-2 text-sm" style={{ color: C.sub }}>
@@ -855,13 +1010,13 @@ function ApplySection({ onBack }) {
           <SubmittingLoader onDone={handleFinalize} />
         ) : (
           <Reveal delay={0.08}>
-            <form onSubmit={handleFormSubmit} className="space-y-7">
+            <form onSubmit={handleFormSubmit} className="space-y-5">
               {/* 작성자(나) 정보 */}
-              <div className="space-y-4">
+              <SectionCard>
                 <SectionHeader title="작성자(나) 정보" subtitle="신청해주시는 본인 정보를 입력해주세요." />
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     이름
                   </label>
                   <input
@@ -879,7 +1034,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     연락처 (010-0000-0000 형식)
                   </label>
                   <input
@@ -897,16 +1052,14 @@ function ApplySection({ onBack }) {
                     </p>
                   )}
                 </div>
-              </div>
+              </SectionCard>
 
               {/* 소개해줄 친구 기본 정보 */}
-              <div className="space-y-4 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
-                <div className="pt-3">
-                  <SectionHeader title="소개해줄 친구 기본 정보" />
-                </div>
+              <SectionCard>
+                <SectionHeader title="소개해줄 친구 기본 정보" />
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     친구 이름
                   </label>
                   <input
@@ -924,7 +1077,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     친구 성별
                   </label>
                   <div className="flex gap-2">
@@ -954,7 +1107,7 @@ function ApplySection({ onBack }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                       나이
                     </label>
                     <input
@@ -973,7 +1126,7 @@ function ApplySection({ onBack }) {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                       키
                     </label>
                     <input
@@ -994,7 +1147,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     활동/거주지역
                   </label>
                   <input
@@ -1012,7 +1165,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     직업
                   </label>
                   <input
@@ -1030,7 +1183,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     친구 연락처 (010-0000-0000 형식)
                   </label>
                   <input
@@ -1048,16 +1201,14 @@ function ApplySection({ onBack }) {
                     </p>
                   )}
                 </div>
-              </div>
+              </SectionCard>
 
               {/* 친구 추천사 & 매력 */}
-              <div className="space-y-4 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
-                <div className="pt-3">
-                  <SectionHeader title="친구 추천사 & 매력" />
-                </div>
+              <SectionCard>
+                <SectionHeader title="친구 추천사 & 매력" />
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     친구가 보증하는 한 줄 소개
                   </label>
                   <textarea
@@ -1080,7 +1231,7 @@ function ApplySection({ onBack }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>
                     주요 취미/관심사
                   </label>
                   <input
@@ -1097,7 +1248,7 @@ function ApplySection({ onBack }) {
                   )}
                 </div>
 
-                <div className="flex flex-col items-center pt-2">
+                <div className="flex flex-col items-center pt-1">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1108,36 +1259,54 @@ function ApplySection({ onBack }) {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="relative flex items-center justify-center transition duration-200 hover:brightness-95"
+                    className="relative flex flex-col items-center justify-center transition duration-200 hover:brightness-95"
                     style={{
-                      width: 84,
-                      height: 84,
-                      borderRadius: "50%",
-                      background: photoPreview
-                        ? `url(${photoPreview}) center/cover no-repeat`
-                        : C.tint,
-                      border: `2px dashed ${photoPreview ? "transparent" : "#FFD9DA"}`,
+                      width: 128,
+                      height: 152,
+                      borderRadius: 6,
+                      background: photoPreview ? C.paper : C.paperAlt,
+                      border: `2px dashed ${photoPreview ? "transparent" : C.border}`,
+                      padding: photoPreview ? 9 : 0,
+                      boxShadow: photoPreview ? "0 16px 30px -16px rgba(42,22,32,0.4)" : "none",
                     }}
                   >
-                    {!photoPreview && (
-                      <Camera size={22} style={{ color: photoLoading ? "#FFC7C9" : C.primary }} />
+                    {photoPreview ? (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundImage: `url(${photoPreview})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          borderRadius: 2,
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <Camera size={22} style={{ color: photoLoading ? "#F3C6CC" : C.primary }} />
+                        <span className="mt-1.5 font-medium" style={{ fontSize: 11, color: C.sub }}>
+                          사진 첨부
+                        </span>
+                      </>
                     )}
-                    <span
-                      className="absolute flex items-center justify-center"
-                      style={{
-                        bottom: -2,
-                        right: -2,
-                        width: 26,
-                        height: 26,
-                        borderRadius: "50%",
-                        background: C.primary,
-                        border: "2px solid #fff",
-                      }}
-                    >
-                      <Camera size={12} style={{ color: "#fff" }} />
-                    </span>
+                    {photoPreview && (
+                      <span
+                        className="absolute flex items-center justify-center"
+                        style={{
+                          bottom: -6,
+                          right: -6,
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: C.primary,
+                          border: "2px solid #fff",
+                        }}
+                      >
+                        <Camera size={13} style={{ color: "#fff" }} />
+                      </span>
+                    )}
                   </button>
-                  <p className="mt-2 text-sm font-semibold" style={{ color: C.text }}>
+                  <p className="mt-2 text-sm font-semibold" style={{ color: C.ink }}>
                     친구 대표 사진
                   </p>
                   <p className="text-xs mt-0.5 text-center" style={{ color: C.sub }}>
@@ -1159,39 +1328,35 @@ function ApplySection({ onBack }) {
                     </p>
                   )}
                 </div>
-              </div>
+              </SectionCard>
 
               {/* 개인정보 안내 + 필수 동의 */}
-              <div className="space-y-3 pt-2" style={{ borderTop: `1px solid ${C.border}` }}>
-                <div
-                  className="mt-3 p-4"
-                  style={{ background: C.tint, border: "1px solid #FFD9DA", borderRadius: 14 }}
-                >
+              <div className="space-y-3">
+                <div className="p-4" style={{ background: C.tint, border: `1px solid ${C.border}`, borderRadius: 14 }}>
                   <p className="text-xs font-bold mb-1.5" style={{ color: C.primary }}>
                     ⚠️ 친구 개인정보 관련 안내
                   </p>
-                  <p className="text-xs leading-relaxed" style={{ color: "#8a4b4d" }}>
+                  <p className="text-xs leading-relaxed" style={{ color: C.primaryDeep }}>
                     이름, 사진, 나이, 연락처 같은 친구의 개인정보는 반드시 당사자 동의를 받은 후에만
                     입력할 수 있어요. 동의 없이 제3자의 개인정보를 수집·제공하면 개인정보보호법 위반에
                     해당할 수 있어요.
                   </p>
                 </div>
 
-                <label className="flex items-start gap-2.5 cursor-pointer">
+                <label className="flex items-start gap-2.5 cursor-pointer px-1">
                   <input
                     type="checkbox"
                     checked={consentAgreed}
                     onChange={toggleConsent}
                     style={{ marginTop: 3, width: 18, height: 18, accentColor: C.primary, flexShrink: 0 }}
                   />
-                  <span className="text-sm leading-relaxed" style={{ color: C.text }}>
+                  <span className="text-sm leading-relaxed" style={{ color: C.ink }}>
                     소개해주는 친구에게 미리 '내친소' 등록 사실을 안내했고, 친구 동의를 받았음을
-                    확인합니다.{" "}
-                    <span style={{ color: C.primary, fontWeight: 700 }}>(필수)</span>
+                    확인합니다. <span style={{ color: C.primary, fontWeight: 700 }}>(필수)</span>
                   </span>
                 </label>
                 {consentError && (
-                  <p className="text-xs" style={{ color: C.primary }}>
+                  <p className="text-xs px-1" style={{ color: C.primary }}>
                     {consentError}
                   </p>
                 )}
@@ -1206,6 +1371,7 @@ function ApplySection({ onBack }) {
                   borderRadius: 999,
                   opacity: photoLoading ? 0.6 : 1,
                   cursor: photoLoading ? "not-allowed" : "pointer",
+                  boxShadow: "0 14px 26px -10px rgba(225,76,95,0.4)",
                 }}
               >
                 신청하기
@@ -1229,22 +1395,32 @@ function ApplySection({ onBack }) {
 
 function ClosingCTA({ onApply }) {
   return (
-    <section className="py-16 sm:py-20">
+    <section className="relative overflow-hidden pt-20 pb-16 sm:pt-28 sm:pb-20" style={{ background: C.board }}>
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
       <Reveal>
-        <div
-          className="max-w-2xl mx-auto px-5 sm:px-8 text-center py-12 sm:py-16"
-          style={{ background: C.text, borderRadius: 28 }}
-        >
-          <h2 className="font-bold text-white" style={{ fontSize: "clamp(20px,3vw,28px)" }}>
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 text-center relative">
+          <h2 className="font-bold" style={{ fontSize: "clamp(20px,3vw,28px)", color: C.paper }}>
             내 친구, 나만 알기 아깝잖아요
           </h2>
-          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          <p className="mt-3 text-sm" style={{ color: "rgba(255,251,248,0.6)" }}>
             지금 신청해보세요. 1분이면 충분해요.
           </p>
           <button
             onClick={onApply}
-            className="mt-7 inline-block px-8 py-3.5 font-semibold transition duration-200 hover:brightness-95 active:scale-95"
-            style={{ background: C.primary, color: "#fff", borderRadius: 999 }}
+            className="mt-8 inline-block px-8 py-3.5 font-semibold transition duration-200 hover:brightness-95 active:scale-95"
+            style={{
+              background: C.primary,
+              color: "#fff",
+              borderRadius: 999,
+              boxShadow: "0 14px 26px -10px rgba(225,76,95,0.5)",
+            }}
           >
             지금 신청하기
           </button>
@@ -1256,12 +1432,12 @@ function ClosingCTA({ onApply }) {
 
 function FooterSection({ onNotice }) {
   return (
-    <footer className="py-10 border-t" style={{ borderColor: C.border }}>
+    <footer className="py-10" style={{ background: C.board, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
       <div
         className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm"
-        style={{ color: C.sub }}
+        style={{ color: "rgba(255,251,248,0.55)" }}
       >
-        <div className="flex items-center gap-1.5 font-semibold" style={{ color: C.text }}>
+        <div className="flex items-center gap-1.5 font-semibold" style={{ color: C.paper }}>
           <Heart size={14} fill={C.primary} style={{ color: C.primary }} /> 내친소
         </div>
         <div className="flex items-center gap-5">
@@ -1305,7 +1481,7 @@ export default function App() {
   const goLanding = () => setView("landing");
 
   return (
-    <div style={{ fontFamily: "'Pretendard', -apple-system, sans-serif", color: C.text, background: C.bg }}>
+    <div style={{ fontFamily: "'Pretendard', -apple-system, sans-serif", color: C.ink, background: C.paper }}>
       <style>{GLOBAL_CSS}</style>
       <Header onApply={goApply} onLogoClick={goLanding} />
 
