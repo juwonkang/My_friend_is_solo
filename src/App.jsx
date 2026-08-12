@@ -26,9 +26,11 @@ const inputStyle = {
   outline: "none",
 };
 
-const GOOGLE_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSfgDiBO2JF_sGQ-DZndx8Wn14FogCackAht8MAocC3N3h1WWQ/viewform";
-const GOOGLE_FORM_EMBED_URL = `${GOOGLE_FORM_URL}?embedded=true`;
+// Google Apps Script 웹 앱 URL
+// ⚠️ 지금 이 URL은 i-on.net 회사 계정으로 만든 거라 외부 방문자는 로그인 벽에 걸려요.
+// 개인 Gmail 계정으로 다시 배포한 뒤, 새 URL로 꼭 교체해주세요.
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzIENRY8JePLS1za27ZYkdX7NEogcmOHhAZ1JgZEuv6JsIt1ZslywFdo8V7INS4Skgc/exec";
 
 const GLOBAL_CSS = `
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
@@ -631,12 +633,53 @@ function StepsTimeline() {
 }
 
 /* ---------------------------------------------------------
-   신청 섹션 (구글 폼 임베드 + 친구 인증 팝업)
+   신청 섹션 (커스텀 폼 + Apps Script → 구글시트 + 친구 인증 팝업)
 --------------------------------------------------------- */
 function ApplySection({ onBack }) {
+  const [form, setForm] = useState({
+    name: "",
+    age: "",
+    region: "",
+    job: "",
+    hobbies: "",
+    quote: "",
+    applicantPhone: "",
+  });
+  const [errors, setErrors] = useState({});
   const [showShare, setShowShare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "친구 이름을 입력해주세요";
+    if (!form.age) e.age = "나이를 입력해주세요";
+    if (!form.region.trim()) e.region = "지역을 입력해주세요";
+    if (!form.job.trim()) e.job = "직업을 입력해주세요";
+    if (!form.quote.trim()) e.quote = "친구를 소개하는 한마디를 남겨주세요";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleFormSubmit = async (ev) => {
+    ev.preventDefault();
+    if (!validate()) return;
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ ...form, submittedAt: new Date().toISOString() }),
+      });
+    } catch (err) {
+      // no-cors라 응답은 못 읽지만, 요청 자체는 시트로 정상 전달돼요
+    }
+
+    setShowShare(true);
+  };
 
   const handleShareDone = () => {
     setShowShare(false);
@@ -691,7 +734,10 @@ function ApplySection({ onBack }) {
                 정식 오픈 소식은 가장 먼저 알려드릴게요. 매칭 수수료도 받지 않을 예정이에요.
               </p>
               <button
-                onClick={() => setDone(false)}
+                onClick={() => {
+                  setForm({ name: "", age: "", region: "", job: "", hobbies: "", quote: "", applicantPhone: "" });
+                  setDone(false);
+                }}
                 className="mt-8 px-6 py-3 font-semibold text-white transition duration-200 hover:brightness-95"
                 style={{ background: C.primary, borderRadius: 999 }}
               >
@@ -701,38 +747,138 @@ function ApplySection({ onBack }) {
           </Reveal>
         ) : (
           <Reveal delay={0.08}>
-            <div>
-              <div className="mt-2">
-                <iframe
-                  src={GOOGLE_FORM_EMBED_URL}
-                  title="내친소 친구 소개 폼"
-                  scrolling="no"
-                  style={{ width: "100%", height: 1600, border: "none", display: "block", borderRadius: 20 }}
-                >
-                  로드 중...
-                </iframe>
+            <form onSubmit={handleFormSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  친구 이름
+                </label>
+                <input
+                  className="ncs-input"
+                  value={form.name}
+                  onChange={update("name")}
+                  placeholder="예: 김도윤"
+                  style={inputStyle}
+                />
+                {errors.name && (
+                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
-              <p className="mt-3 text-xs text-center" style={{ color: C.sub }}>
-                폼이 안 보이면{" "}
-                <a
-                  href={GOOGLE_FORM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: C.primary, fontWeight: 600, textDecoration: "underline" }}
-                >
-                  새 창에서 작성하기
-                </a>
-              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    나이
+                  </label>
+                  <input
+                    className="ncs-input"
+                    type="number"
+                    value={form.age}
+                    onChange={update("age")}
+                    placeholder="29"
+                    style={inputStyle}
+                  />
+                  {errors.age && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.age}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                    지역
+                  </label>
+                  <input
+                    className="ncs-input"
+                    value={form.region}
+                    onChange={update("region")}
+                    placeholder="예: 수원"
+                    style={inputStyle}
+                  />
+                  {errors.region && (
+                    <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                      {errors.region}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  직업
+                </label>
+                <input
+                  className="ncs-input"
+                  value={form.job}
+                  onChange={update("job")}
+                  placeholder="예: 백엔드 개발자"
+                  style={inputStyle}
+                />
+                {errors.job && (
+                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                    {errors.job}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  취미 (쉼표로 구분, 선택)
+                </label>
+                <input
+                  className="ncs-input"
+                  value={form.hobbies}
+                  onChange={update("hobbies")}
+                  placeholder="배드민턴, 카페, 드라이브"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  친구를 소개하는 한마디
+                </label>
+                <textarea
+                  className="ncs-input"
+                  value={form.quote}
+                  onChange={update("quote")}
+                  rows={3}
+                  maxLength={30}
+                  placeholder="예: 착하고 다정한데 집순이라 사람을 잘 못 만나요"
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+                <p className="text-xs mt-1 text-right" style={{ color: C.sub }}>
+                  {form.quote.length}/30
+                </p>
+                {errors.quote && (
+                  <p className="text-xs mt-1.5" style={{ color: C.primary }}>
+                    {errors.quote}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: C.text }}>
+                  내 연락처 (선택 — 정식 오픈 소식 안내용)
+                </label>
+                <input
+                  className="ncs-input"
+                  value={form.applicantPhone}
+                  onChange={update("applicantPhone")}
+                  placeholder="010-0000-0000"
+                  style={inputStyle}
+                />
+              </div>
 
               <button
-                onClick={() => setShowShare(true)}
-                className="w-full mt-6 py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
+                type="submit"
+                className="w-full py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
                 style={{ background: C.primary, borderRadius: 999 }}
               >
                 신청하기
               </button>
-            </div>
+            </form>
           </Reveal>
         )}
       </div>
