@@ -680,6 +680,27 @@ function ApplySection({ onBack }) {
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  // 010-0000-0000 형태로 자동으로 하이픈을 넣어주는 포맷터
+  const formatPhoneNumber = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length < 4) return digits;
+    if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  };
+  const updatePhone = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: formatPhoneNumber(e.target.value) }));
+  };
+
+  // 이름 칸에는 숫자를 입력할 수 없도록 걸러줘요
+  const updateNameOnly = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value.replace(/[0-9]/g, "") }));
+  };
+
+  // 숫자만 입력할 수 있게 걸러줘요 (키, 나이)
+  const updateNumericOnly = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value.replace(/[^0-9]/g, "") }));
+  };
+
   const validate = () => {
     const e = {};
     if (!form.myName.trim()) e.myName = "이름을 입력해주세요";
@@ -843,7 +864,7 @@ function ApplySection({ onBack }) {
                   <input
                     className="ncs-input"
                     value={form.myName}
-                    onChange={update("myName")}
+                    onChange={updateNameOnly("myName")}
                     placeholder="예: 이서연"
                     style={inputStyle}
                   />
@@ -861,8 +882,10 @@ function ApplySection({ onBack }) {
                   <input
                     className="ncs-input"
                     value={form.myPhone}
-                    onChange={update("myPhone")}
+                    onChange={updatePhone("myPhone")}
                     placeholder="010-0000-0000"
+                    inputMode="tel"
+                    maxLength={13}
                     style={inputStyle}
                   />
                   {errors.myPhone && (
@@ -886,7 +909,7 @@ function ApplySection({ onBack }) {
                   <input
                     className="ncs-input"
                     value={form.friendName}
-                    onChange={update("friendName")}
+                    onChange={updateNameOnly("friendName")}
                     placeholder="예: 김도윤"
                     style={inputStyle}
                   />
@@ -933,10 +956,11 @@ function ApplySection({ onBack }) {
                     </label>
                     <input
                       className="ncs-input"
-                      type="number"
                       value={form.friendAge}
-                      onChange={update("friendAge")}
+                      onChange={updateNumericOnly("friendAge")}
                       placeholder="29"
+                      inputMode="numeric"
+                      maxLength={3}
                       style={inputStyle}
                     />
                   </div>
@@ -947,8 +971,10 @@ function ApplySection({ onBack }) {
                     <input
                       className="ncs-input"
                       value={form.friendHeight}
-                      onChange={update("friendHeight")}
+                      onChange={updateNumericOnly("friendHeight")}
                       placeholder="175"
+                      inputMode="numeric"
+                      maxLength={3}
                       style={inputStyle}
                     />
                     {errors.friendHeight && (
@@ -1002,8 +1028,10 @@ function ApplySection({ onBack }) {
                   <input
                     className="ncs-input"
                     value={form.friendPhone}
-                    onChange={update("friendPhone")}
+                    onChange={updatePhone("friendPhone")}
                     placeholder="010-0000-0000"
+                    inputMode="tel"
+                    maxLength={13}
                     style={inputStyle}
                   />
                   {errors.friendPhone && (
