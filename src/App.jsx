@@ -27,10 +27,11 @@ const inputStyle = {
 };
 
 // Google Apps Script 웹 앱 URL
-// ⚠️ 지금 이 URL은 i-on.net 회사 계정으로 만든 거라 외부 방문자는 로그인 벽에 걸려요.
-// 개인 Gmail 계정으로 다시 배포한 뒤, 새 URL로 꼭 교체해주세요.
+// ⚠️ 지금 이 URL은 아직 구글 로그인을 요구해요. 배포 설정에서
+// "액세스 권한이 있는 사용자"가 "Anyone with Google Account"로 되어 있을 가능성이 높아요.
+// 반드시 "Anyone"(전체, 로그인 불필요)으로 바꿔서 재배포한 뒤 이 URL이 맞는지 다시 확인해주세요.
 const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzIENRY8JePLS1za27ZYkdX7NEogcmOHhAZ1JgZEuv6JsIt1ZslywFdo8V7INS4Skgc/exec";
+  "https://script.google.com/macros/s/AKfycbzwDefhFOHdhvaTU94C_GCvcnfoC42zaopK5DTBD4yjwRkELiXmlOyZ1Sj9qevaV79A-A/exec";
 
 const GLOBAL_CSS = `
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
@@ -223,10 +224,10 @@ function AdSlot() {
 
 function SubmittingLoader({ onDone }) {
   const steps = [
-    "친구에게 보낸 인증 링크를 확인하고 있어요",
-    "제출해주신 소개글을 검토하고 있어요",
-    "사진을 확인하고 있어요",
+    "신청 내용을 확인하고 있어요",
+    "소개해주신 한마디를 검토하고 있어요",
     "신청 접수를 준비하고 있어요",
+    "정식 오픈 알림 목록에 등록하고 있어요",
   ];
   const [doneCount, setDoneCount] = useState(0);
 
@@ -280,79 +281,41 @@ function SubmittingLoader({ onDone }) {
   );
 }
 
-function FriendShareModal({ onClose, onDone }) {
-  const [phone, setPhone] = useState("");
-  const [error, setError] = useState("");
-  const [sharing, setSharing] = useState(false);
-
-  const shareUrl = `https://naechinso.app/verify/${Math.random().toString(36).slice(2, 9)}`;
-
-  const handleShare = async () => {
-    if (phone.replace(/\D/g, "").length < 10) {
-      setError("친구 번호를 정확히 입력해주세요");
-      return;
-    }
-    setError("");
-    setSharing(true);
-
-    const shareData = {
-      title: "내친소 친구 인증 요청",
-      text: "네가 소개됐어! 확인하고 동의해줘 💌",
-      url: shareUrl,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-      }
-    } catch (err) {
-      // 공유 취소해도 신청 절차는 계속 진행
-    }
-
-    setTimeout(onDone, 300);
-  };
-
+function DoneModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-5"
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={onClose}
     >
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm bg-white p-7" style={{ borderRadius: 24 }}>
-        <div className="flex items-center gap-1.5 font-bold mb-1" style={{ color: C.text }}>
-          <ShieldCheck size={18} style={{ color: C.primary }} /> 친구 인증 요청
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm bg-white p-8 text-center"
+        style={{ borderRadius: 24 }}
+      >
+        <div
+          className="mx-auto mb-5 flex items-center justify-center"
+          style={{ width: 64, height: 64, borderRadius: "50%", background: C.tint }}
+        >
+          <Check size={28} style={{ color: C.primary }} />
         </div>
-        <p className="text-sm mb-6" style={{ color: C.sub }}>
-          친구 번호를 입력하고 인증 링크를 공유해주세요. 친구가 확인하고 동의해야 신청이 완료돼요.
+        <h3 className="font-bold" style={{ fontSize: 20, color: C.text }}>
+          신청 완료!
+        </h3>
+        <p className="mt-3 text-sm leading-relaxed" style={{ color: C.sub }}>
+          신청이 접수됐어요.
+          <br />
+          정식 오픈 소식은 가장 먼저 알려드릴게요.
         </p>
-
-        <div className="space-y-2">
-          <input
-            className="ncs-input"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="친구 번호 (010-0000-0000)"
-            style={inputStyle}
-          />
-          {error && (
-            <p className="text-xs" style={{ color: C.primary }}>
-              {error}
-            </p>
-          )}
-        </div>
-
+        <p className="mt-2 text-xs" style={{ color: C.sub }}>
+          매칭 수수료는 받지 않을 예정이에요.
+        </p>
         <button
-          onClick={handleShare}
-          disabled={sharing}
-          className="w-full mt-5 py-3.5 font-semibold text-white transition duration-200 hover:brightness-95 active:scale-95"
+          onClick={onClose}
+          className="w-full mt-7 py-3.5 font-semibold text-white transition duration-200 hover:brightness-95"
           style={{ background: C.primary, borderRadius: 999 }}
         >
-          {sharing ? "공유 중..." : "인증 링크 공유하기"}
-        </button>
-        <button onClick={onClose} className="w-full mt-3 text-sm font-medium" style={{ color: C.sub }}>
-          취소
+          확인
         </button>
       </div>
     </div>
@@ -633,7 +596,7 @@ function StepsTimeline() {
 }
 
 /* ---------------------------------------------------------
-   신청 섹션 (커스텀 폼 + Apps Script → 구글시트 + 친구 인증 팝업)
+   신청 섹션 (커스텀 폼 + Apps Script → 구글시트)
 --------------------------------------------------------- */
 function ApplySection({ onBack }) {
   const [form, setForm] = useState({
@@ -646,7 +609,6 @@ function ApplySection({ onBack }) {
     applicantPhone: "",
   });
   const [errors, setErrors] = useState({});
-  const [showShare, setShowShare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -678,17 +640,13 @@ function ApplySection({ onBack }) {
       // no-cors라 응답은 못 읽지만, 요청 자체는 시트로 정상 전달돼요
     }
 
-    setShowShare(true);
-  };
-
-  const handleShareDone = () => {
-    setShowShare(false);
     setSubmitting(true);
   };
 
   const handleFinalize = () => {
     setSubmitting(false);
     setDone(true);
+    setForm({ name: "", age: "", region: "", job: "", hobbies: "", quote: "", applicantPhone: "" });
   };
 
   return (
@@ -713,38 +671,6 @@ function ApplySection({ onBack }) {
 
         {submitting ? (
           <SubmittingLoader onDone={handleFinalize} />
-        ) : done ? (
-          <Reveal>
-            <div className="text-center py-10">
-              <div
-                className="mx-auto mb-6 flex items-center justify-center"
-                style={{ width: 64, height: 64, borderRadius: "50%", background: C.tint }}
-              >
-                <Check size={28} style={{ color: C.primary }} />
-              </div>
-              <h3 className="font-bold" style={{ fontSize: 20, color: C.text }}>
-                신청 완료!
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed" style={{ color: C.sub }}>
-                친구에게 인증 링크를 보냈어요.
-                <br />
-                친구가 확인하고 동의하면 신청이 정식으로 접수돼요.
-              </p>
-              <p className="mt-2 text-xs" style={{ color: C.sub }}>
-                정식 오픈 소식은 가장 먼저 알려드릴게요. 매칭 수수료도 받지 않을 예정이에요.
-              </p>
-              <button
-                onClick={() => {
-                  setForm({ name: "", age: "", region: "", job: "", hobbies: "", quote: "", applicantPhone: "" });
-                  setDone(false);
-                }}
-                className="mt-8 px-6 py-3 font-semibold text-white transition duration-200 hover:brightness-95"
-                style={{ background: C.primary, borderRadius: 999 }}
-              >
-                다른 친구도 신청하기
-              </button>
-            </div>
-          </Reveal>
         ) : (
           <Reveal delay={0.08}>
             <form onSubmit={handleFormSubmit} className="space-y-5">
@@ -883,7 +809,7 @@ function ApplySection({ onBack }) {
         )}
       </div>
 
-      {showShare && <FriendShareModal onClose={() => setShowShare(false)} onDone={handleShareDone} />}
+      {done && <DoneModal onClose={() => setDone(false)} />}
     </section>
   );
 }
