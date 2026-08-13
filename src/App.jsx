@@ -44,10 +44,20 @@ const GLOBAL_CSS = `
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+html, body { overflow-x: hidden; max-width: 100%; }
+#root { overflow-x: hidden; }
 .ncs-input:focus { border-color: ${C.primary} !important; box-shadow: 0 0 0 3px ${C.tint}; }
 button { font-family: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid ${C.primary}; outline-offset: 2px; }
 ::selection { background: ${C.tint}; color: ${C.primaryDeep}; }
+
+/* 카톡/인스타 인앱 브라우저는 상하단 바 때문에 100vh가 실제 보이는
+   영역보다 커요. dvh를 지원하는 브라우저에서는 그걸 우선 써서
+   신청 페이지 하단이 브라우저 바에 가려 잘리는 걸 막아줘요. */
+.ncs-full-height { min-height: 100vh; }
+@supports (min-height: 100dvh) {
+  .ncs-full-height { min-height: 100dvh; }
+}
 
 @keyframes toastPop {
   from { opacity: 0; transform: translate(-50%, 10px); }
@@ -411,9 +421,9 @@ function DoneModal({ onClose }) {
           신청 완료!
         </h3>
         <p className="mt-3 text-sm leading-relaxed" style={{ color: C.sub }}>
-          신청이 접수됐어요.
+          신청서 잘 받았어요.
           <br />
-          정식 오픈 소식은 가장 먼저 알려드릴게요.
+          정식 오픈 소식은 가장 먼저 보내드릴게요.
         </p>
         <p className="mt-2 text-xs" style={{ color: C.sub }}>
           매칭 수수료는 받지 않을 예정이에요.
@@ -867,8 +877,8 @@ function ApplySection({ onBack }) {
     if (!form.friendJob.trim()) e.friendJob = "직업을 입력해주세요";
     if (!form.friendHeight.trim()) e.friendHeight = "키를 입력해주세요";
     if (!form.friendPhone.trim()) e.friendPhone = "친구 연락처를 입력해주세요";
-    if (!form.friendQuote.trim()) e.friendQuote = "친구를 소개하는 한마디를 입력해주세요";
-    if (!form.friendHobbies.trim()) e.friendHobbies = "취미/관심사를 입력해주세요";
+    if (!form.friendQuote.trim()) e.friendQuote = "친구가 보증하는 한 줄 소개를 입력해주세요";
+    if (!form.friendHobbies.trim()) e.friendHobbies = "주요 취미/관심사를 입력해주세요";
     setErrors(e);
 
     let photoOk = true;
@@ -879,7 +889,7 @@ function ApplySection({ onBack }) {
 
     let consentOk = true;
     if (!consentAgreed) {
-      setConsentError("동의해야 신청이 가능해요");
+      setConsentError("친구 동의 확인에 체크해주세요");
       consentOk = false;
     } else {
       setConsentError("");
@@ -894,11 +904,11 @@ function ApplySection({ onBack }) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setPhotoError("이미지 파일만 업로드할 수 있어요");
+      setPhotoError("이미지 파일만 첨부할 수 있어요");
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
-      setPhotoError("15MB 이하의 사진만 업로드할 수 있어요");
+      setPhotoError("15MB 이하의 사진만 첨부할 수 있어요");
       return;
     }
 
@@ -987,7 +997,7 @@ function ApplySection({ onBack }) {
   };
 
   return (
-    <section className="py-10 sm:py-16" style={{ background: C.paperAlt, minHeight: "100vh" }}>
+    <section className="ncs-full-height py-10 sm:py-16" style={{ background: C.paperAlt }}>
       <div className="max-w-xl mx-auto px-5 sm:px-8">
         <button
           onClick={onBack}
@@ -1002,7 +1012,7 @@ function ApplySection({ onBack }) {
             내 친구를 소개합니다
           </h2>
           <p className="mt-2 text-sm" style={{ color: C.sub }}>
-            친구 정보를 적어주시면, 인증을 거쳐 신청이 접수돼요.
+            친구 정보를 적어주시면 신청이 바로 접수돼요.
           </p>
         </div>
 
@@ -1481,7 +1491,7 @@ export default function App() {
   const goLanding = () => setView("landing");
 
   return (
-    <div style={{ fontFamily: "'Pretendard', -apple-system, sans-serif", color: C.ink, background: C.paper }}>
+    <div style={{ fontFamily: "'Pretendard', -apple-system, sans-serif", color: C.ink, background: C.paper, overflowX: "hidden" }}>
       <style>{GLOBAL_CSS}</style>
       <Header onApply={goApply} onLogoClick={goLanding} />
 
